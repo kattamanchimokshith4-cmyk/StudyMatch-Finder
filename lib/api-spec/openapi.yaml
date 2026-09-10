@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: profile
+    description: Current student profile
+  - name: requests
+    description: Study group requests
+  - name: analytics
+    description: StudyMatch activity analytics
 paths:
   /healthz:
     get:
@@ -24,6 +30,121 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get the current student profile
+      responses:
+        "200":
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update the current student profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+  /requests:
+    get:
+      operationId: listStudyRequests
+      tags: [requests]
+      summary: List active study requests
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: subject
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: location
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [campus, online]
+      responses:
+        "200":
+          description: Matching requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudyRequest"
+    post:
+      operationId: createStudyRequest
+      tags: [requests]
+      summary: Create a study request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyRequestInput"
+      responses:
+        "201":
+          description: Created request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyRequest"
+  /requests/{id}/join:
+    post:
+      operationId: joinStudyRequest
+      tags: [requests]
+      summary: Join a study request and reveal its contact details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Joined request with contact information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyRequest"
+        "404":
+          description: Request not found
+  /analytics:
+    get:
+      operationId: getAnalytics
+      tags: [analytics]
+      summary: Get aggregate StudyMatch analytics
+      responses:
+        "200":
+          description: Analytics summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analytics"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +154,137 @@ components:
           type: string
       required:
         - status
+    UserProfile:
+      type: object
+      required: [id, name, email, course, year, subjects, availability]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        whatsapp:
+          type: ["string", "null"]
+        course:
+          type: string
+        year:
+          type: integer
+        subjects:
+          type: array
+          items:
+            type: string
+        availability:
+          type: array
+          items:
+            type: string
+    UserProfileInput:
+      type: object
+      required: [name, email, course, year, subjects, availability]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          minLength: 3
+        whatsapp:
+          type: ["string", "null"]
+        course:
+          type: string
+          minLength: 1
+        year:
+          type: integer
+          minimum: 1
+          maximum: 8
+        subjects:
+          type: array
+          items:
+            type: string
+        availability:
+          type: array
+          items:
+            type: string
+    StudyRequest:
+      type: object
+      required: [id, subject, topic, preferredDate, preferredTime, location, note, creatorName, creatorCourse, creatorYear, joinedCount, hasJoined, isOwner, contactInfo]
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        topic:
+          type: string
+        preferredDate:
+          type: string
+          format: date
+        preferredTime:
+          type: string
+        location:
+          type: string
+          enum: [campus, online]
+        note:
+          type: string
+        creatorName:
+          type: string
+        creatorCourse:
+          type: string
+        creatorYear:
+          type: integer
+        joinedCount:
+          type: integer
+        hasJoined:
+          type: boolean
+        isOwner:
+          type: boolean
+        contactInfo:
+          type: ["string", "null"]
+    StudyRequestInput:
+      type: object
+      required: [subject, topic, preferredDate, preferredTime, location, note]
+      properties:
+        subject:
+          type: string
+          minLength: 1
+        topic:
+          type: string
+          minLength: 1
+        preferredDate:
+          type: string
+          format: date
+        preferredTime:
+          type: string
+          minLength: 1
+        location:
+          type: string
+          enum: [campus, online]
+        note:
+          type: string
+          minLength: 1
+    SubjectCount:
+      type: object
+      required: [label, count]
+      properties:
+        label:
+          type: string
+        count:
+          type: integer
+    Analytics:
+      type: object
+      required: [totalRequests, totalMembers, activeToday, popularSubjects, busySlots]
+      properties:
+        totalRequests:
+          type: integer
+        totalMembers:
+          type: integer
+        activeToday:
+          type: integer
+        popularSubjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectCount"
+        busySlots:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectCount"
 

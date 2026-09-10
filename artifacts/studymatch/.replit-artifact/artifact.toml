@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "StudyMatch"
+description = "A study group finder for college students to create profiles, discover study requests, join peers, and see analytics about campus study activity."
+version = "1.0.0"
+id = "artifacts/studymatch"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22817
+
+[services.development]
+run = "pnpm --filter @workspace/studymatch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/studymatch", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/studymatch/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22817"
+BASE_PATH = "/"
